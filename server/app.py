@@ -70,15 +70,37 @@ api.add_resource(Newsletters, '/newsletters')
 class NewsletterByID(Resource):
 
     def get(self, id):
-
         response_dict = Newsletter.query.filter_by(id=id).first().to_dict()
-
         response = make_response(
             response_dict,
             200,
         )
-
         return response
+    
+    def patch(self, id):
+        record = Newsletter.query.filter(Newsletter.id == id).first()
+        try:
+            data = request.form
+            #this didn't work for some reason
+            # data = request.get_json()
+            for k, v in data.items():
+                setattr(record, k, v)
+            db.session.commit()
+            return make_response(record.to_dict(), 200)
+        except Exception as e:
+            db.session.rollback()
+            return {"Error": str(e)}, 400
+        
+    def delete(self, id):
+        record = Newsletter.query.filter_by(id=id).first()
+        try:
+            db.session.delete(record)
+            db.session.commit()
+            #returned message not showing up on postman
+            return make_response({"message": "delete successful"}, 204)
+        except Exception as e:
+            db.session.rollback()
+            return make_response({"error" : str(e)}, 400)
 
 api.add_resource(NewsletterByID, '/newsletters/<int:id>')
 
